@@ -3,32 +3,46 @@ class Stories < ActiveRecord::Base
   validates :canonical_url, uniqueness: true, presence: true
 
   def get_content
-    puts "=====#{canonical_url}====="
     response = Faraday.get(canonical_url)
     raise 'status not 200' unless response.status == 200
     response.body
   end
 
-  def og_tags(body)
-    begin
-      open_graph = OGP::OpenGraph.new(body)
-    rescue
-      return :error #not every site has all og
-    end
-    JSON.parse(open_graph.to_json)
-  end
-
   def scrape_url
     html = get_content
-    formated_response html
+    formatted_response html
   end
 
-  def formated_response(body)
-    response = og_tags(body)
-    return {scrape_status: :error} if response == :error
-    response['image'] = response['images'].first['table']
-    response.reject!{|k,v| %w(url type title image ).exclude?(k)}
-    response.merge!(scrape_status: 'done', updated_time: updated_at, id: id)
+  def formatted_response(body)
+    response = get_all_meta_tags(body)
+    tags = response[:tags]
+    tags.merge(
+      scrape_status: response[:missing_tags] ? :pending : :done,
+      updated_time: updated_at,
+      id: id
+    )
+  end
+
+  def get_meta_tag(doc, tag)
+    doc.at("meta[property=\"og:#{tag}\"]")['content']
+  end
+
+  def get_all_meta_tags(body)
+    doc = Nokogiri::HTML(body)
+    tags = {}
+    missing_tags = false
+    %w(url type title image).each do |key|
+      content = get_meta_tag(doc, key)
+      tags.merge!(key => content)
+      missing_tags = true if content.blank?
+      %w(url type width height alt).each do |img_key|
+        image_content = get_meta_tag(doc, "image:#{img_key}")
+        tags[:image].merge!(key => image_content)
+        missing_tags = true if image_content.blank?
+      end if key == 'image'
+
+      end
+    {tags: tags, missing_tags: missing_tags}
   end
 
 end
