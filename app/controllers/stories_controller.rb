@@ -3,13 +3,13 @@ class StoriesController < ActionController::Base
 
   def create
     url = params.permit(:url).to_h[:url]
-    story = Stories.create( canonical_url: url  )
+    story = Story.create( canonical_url: url  )
     render json: {id: story.id}
   end
 
   def show
     id = params.permit(:id).to_h[:id]
-    story = Stories.find id
+    story = Story.find id
     response = story.scrape_url
     render json: response
   end

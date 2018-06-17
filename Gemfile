@@ -33,7 +33,6 @@ gem 'jbuilder', '~> 2.5'
 # Use Capistrano for deployment
 # gem 'capistrano-rails', group: :development
 gem 'faraday'
-gem 'ogp'
 gem 'railties'
 
 group :development, :test do
