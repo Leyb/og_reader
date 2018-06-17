@@ -16,7 +16,6 @@ class Story < ActiveRecord::Base
   def formatted_response(body)
     response = get_all_meta_tags(body)
     tags = response[:tags]
-    debugger if response[:missing_tags].present?
     tags.merge(
       scrape_status: response[:missing_tags].present? ? :pending : :done,
       updated_time: updated_at,
@@ -40,7 +39,6 @@ class Story < ActiveRecord::Base
       tags.merge!(key => content)
       missing_tags = true if content.blank?
       %i(url type width height alt).each do |img_key|
-        # debugger
         image_content = get_meta_tag(doc, "image:#{img_key}")
         tags[:image][img_key] = image_content
         missing_tags = true if image_content.blank?
